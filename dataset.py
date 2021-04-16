@@ -1,49 +1,42 @@
-from torch.utils.data import Dataset
 import cv2
-import re
-import os
+import utils
+from torch.utils.data import DataLoader, Dataset
 
 
 class PetDataset(Dataset):
-    def __init__(self, fpaths, label_func, transform=None):
+    def __init__(self, path_list, label_func, transform=None):
 
-        self.fpaths = fpaths
+        self.path_list = utils.filter_pathlist(path_list)
         self.label_func = label_func
         self.transform = transform
 
     def __len__(self):
-        return len(self.fpaths)
+        return len(self.path_list)
 
     def __getitem__(self, idx):
 
-        fpath = self.fpaths[idx]
+        image_path = self.path_list[idx]
 
-        image = cv2.imread(fpath)
+        image = cv2.imread(str(image_path))
 
-        label = self.label_func(fpath.split('/')[-1])
+        if image is None:
+            return None
 
-        sample = {"image": image, "label": label}
+        label = self.label_func(image_path.name)
+
+        sample = (image, label)
 
         if self.transform:
             sample = self.transform(sample)
 
-        return sample
+        return sample[0].float(), sample[1]
 
-class PetTransform:
-    def __init__(self, image_transform, label_transform):
-        self.image_transform = image_transform
-        self.label_transform = label_transform
 
-    def __call__(self, sample):
-        image, label = sample["image"], sample["label"]
 
-        if self.image_transform is not None:
-            image = self.image_transform(image=sample["image"])["image"]
+class Loader(DataLoader):
+    def __init__(self, path_list, label_func, batch_size, shuffle, transform):
+        self.ds = PetDataset(path_list, label_func, transform)
+        super().__init__(self.ds, batch_size=batch_size, shuffle=shuffle)
 
-        if self.label_transform is not None:
-            label = self.label_transform(sample["label"])
-
-        return {"image": image,
-                "label": label}
-
-        
+    def get_dataset(self):
+        return self.ds

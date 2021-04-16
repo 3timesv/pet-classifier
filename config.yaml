@@ -1,0 +1,15 @@
+image_path: data/images/
+save_path: saved/model_state/
+model_name: resnet34
+valid_split: 0.2
+input_size:
+    presize_height: 460
+    presize_width: 460
+    final_height: 224
+    final_width: 224
+num_classes: 37
+lr: 0.0000001
+batch_size: 64
+epoch_count: 15
+
+
